@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,8 +11,8 @@ namespace AspNetCoreApiBasicAuth.Web.Services
         private static Dictionary<string, string> _notSecureStore = new Dictionary<string, string>
         {
             // Passwords are base64 encoded for this example
-            { "admin", "dj9Kek1EJHlYJDk/V05Kag==" }, // P@ssw0rd  
-            { "user1",  "UEBzc3cwcmQ=" }// v?JzMD$yX$9?WNJj
+            { "admin", "dj9Kek1EJHlYJDk/V05Kag==" }, // v?JzMD$yX$9?WNJj  
+            { "hackitright",  "UEBzc3cwcmQ=" }// P@ssw0rd
         };
 
         public async Task<bool> ValidateAsync(string username, string password)
@@ -23,7 +22,7 @@ namespace AspNetCoreApiBasicAuth.Web.Services
 
             return await _notSecureStore
                 .ToAsyncEnumerable()
-                .Any(c => c.Key.Equals(username, StringComparison.InvariantCultureIgnoreCase) && c.Value == encodedPassword);
+                .AnyAsync(c => c.Key.Equals(username, StringComparison.InvariantCultureIgnoreCase) && c.Value == encodedPassword);
         }
     }
 }

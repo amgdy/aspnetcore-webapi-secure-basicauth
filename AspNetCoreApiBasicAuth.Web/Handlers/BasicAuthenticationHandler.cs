@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using System;
-using System.Linq;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
@@ -40,9 +39,15 @@ namespace AspNetCoreApiBasicAuth.Web.Handlers
 
             var credentialBytes = Convert.FromBase64String(authHeaderValue.Parameter);
             var credentials = Encoding.UTF8.GetString(credentialBytes).Split(':');
-            var username = credentials.First();
-            var password = credentials.Last();
+            if (credentials.Length != 2)
+            {
+                return AuthenticateResult.Fail("Invalid credentials");
+            }
 
+            var username = credentials[0];
+            var password = credentials[1];
+
+            // Here check if the gived credentials are valid or not
             var isValidCredentials = await _userService.ValidateAsync(username, password);
             if (!isValidCredentials)
             {
@@ -54,18 +59,18 @@ namespace AspNetCoreApiBasicAuth.Web.Handlers
                 new Claim(ClaimTypes.Name, username)
             };
 
-            var identity = new ClaimsIdentity(claims, Scheme.Name);
-            var principal = new ClaimsPrincipal(identity);
-            var ticket = new AuthenticationTicket(principal, Scheme.Name);
+            var claimsIdentity = new ClaimsIdentity(claims, Scheme.Name);
+            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+            var authenticationTicket = new AuthenticationTicket(claimsPrincipal, Scheme.Name);
 
-            return AuthenticateResult.Success(ticket);
+            return AuthenticateResult.Success(authenticationTicket);
         }
 
         protected override Task HandleChallengeAsync(AuthenticationProperties properties)
         {
             if (!Request.IsHttps && !Options.AllowInsecureProtocol)
             {
-                const string insecureProtocolMessage = "Request is HTTP, Basic Authentication will not respond.";
+                const string insecureProtocolMessage = "Request is not HTTPS, Basic Authentication will not respond.";
                 Logger.LogInformation(insecureProtocolMessage);
                 Response.StatusCode = 500;
                 var encodedResponseText = Encoding.UTF8.GetBytes(insecureProtocolMessage);
@@ -79,7 +84,7 @@ namespace AspNetCoreApiBasicAuth.Web.Handlers
                 Response.Headers.Append(HeaderNames.WWWAuthenticate, headerValue);
             }
 
-            return Task.CompletedTask;
+            return base.HandleChallengeAsync(properties);
         }
     }
 }

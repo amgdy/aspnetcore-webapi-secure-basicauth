@@ -1,18 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AspNetCoreApiBasicAuth.Web.Handlers;
+﻿using AspNetCoreApiBasicAuth.Web.Handlers;
 using AspNetCoreApiBasicAuth.Web.Services;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
 
 namespace AspNetCoreApiBasicAuth.Web
 {
@@ -28,31 +20,38 @@ namespace AspNetCoreApiBasicAuth.Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddAuthentication("Basic")
-                .AddScheme<BasicAuthenticationOptions, BasicAuthenticationHandler>("Basic", o => {
-                    o.Realm = "basicauth.test";
-                    o.AllowInsecureProtocol = true;
+            services.AddControllers();
+            services
+                .AddAuthentication("Basic")
+                .AddScheme<BasicAuthenticationOptions, BasicAuthenticationHandler>("Basic", options =>
+                {
+                    options.Realm = "hackitright.com";
+                    options.AllowInsecureProtocol = true; // DO NOT do this in PRODUCTION, you SHOULD always use HTTPS
                 });
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
 
             services.AddScoped<IUserService, InMemoryUserService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
-            else
-            {
-                app.UseHsts();
-            }
 
             app.UseHttpsRedirection();
+
+            app.UseRouting();
+
             app.UseAuthentication();
-            app.UseMvc();
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
         }
     }
 }
